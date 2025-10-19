@@ -2,18 +2,16 @@ import time
 from tracker.activity_detector import is_actively_working
 from tracker.idle_detector import is_idle
 from tracker.topic_classifier import is_learning_activity
+from tracker.logger import log_session
 
 # Idle threshold in seconds
 IDLE_THRESHOLD = 120
 
 
 def run_tracker():
-    """
-    Main tracker loop. Continuously checks active window,
-    idle status, classifies learning, and logs to Excel.
-    """
     print("10,000 Hour Tracker Started. Press Ctrl+C to stop.")
-
+    current_activity=None
+    session_start_time=time.time()
     try:
         while True:
             # 1️⃣ Check if user is idle
@@ -30,6 +28,7 @@ def run_tracker():
                 print(f"Working: {working}, Active: {active_name}, Learning: {learning}, Topic: {topic}")
             else:
                 print("User is idle, tracker paused.")
+                new_activity = "Idle"
 
             time.sleep(2)  # Check every 2 seconds
     except KeyboardInterrupt:
