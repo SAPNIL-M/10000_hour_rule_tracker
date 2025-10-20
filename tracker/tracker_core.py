@@ -1,35 +1,56 @@
 import time
 from tracker.activity_detector import is_actively_working
 from tracker.idle_detector import is_idle
-from tracker.topic_classifier import is_learning_activity
+from tracker.topic_classifier import get_topic_from_activity
 from tracker.logger import log_session
+import threading
 
 # Idle threshold in seconds
-IDLE_THRESHOLD = 120
+IDLE_THRESHOLD = 60
 
 
-def run_tracker():
-    print("10,000 Hour Tracker Started. Press Ctrl+C to stop.")
-    current_activity=None
-    session_start_time=time.time()
-    try:
-        while True:
-            # 1️⃣ Check if user is idle
-            if not is_idle(IDLE_THRESHOLD):
-                # 2️⃣ Get active window or Chrome tab title properly
-                working, active_name = is_actively_working()
+def run_tracker(stop_event,update_callback):
+    update_callback("10,000 Hour Tracker Started. Press Ctrl+C to stop.")
+    current_activity = None
+    session_start_time = time.time()
 
-                # 3️⃣ Classify learning activity
-                learning, topic = is_learning_activity(active_name)
+    while not stop_event.is_set():
 
-                # 4️⃣ Log to Excel (we’ll implement this later)
+        if is_idle(IDLE_THRESHOLD):
+            new_activity = "Idle"
+        else:
+            working, active_name = is_actively_working()
 
-                # 5️⃣ Debug print
-                print(f"Working: {working}, Active: {active_name}, Learning: {learning}, Topic: {topic}")
+            if not working:
+                new_activity = "Distraction"
             else:
-                print("User is idle, tracker paused.")
-                new_activity = "Idle"
+                topic = get_topic_from_activity(active_name)
 
-            time.sleep(2)  # Check every 2 seconds
-    except KeyboardInterrupt:
-        print("Tracker stopped by user.")
+                if topic is not None:
+                    new_activity = topic
+                else:
+                    new_activity = "General learning"
+
+        if new_activity != current_activity:
+
+            if current_activity is not None and current_activity not in ["Idle", "Distraction", "General learning"]:
+                duration = time.time() - session_start_time
+
+                if duration > 10:
+                    log_session(current_activity, duration)
+
+
+            update_callback(f"--- New Session Started: {new_activity} ---")
+            current_activity = new_activity
+            session_start_time = time.time()
+
+        update_callback(f"Active: {current_activity}")
+        stop_event.wait(2)  # Check every 2 seconds
+
+    if current_activity is not None and current_activity not in ["Idle", "Distraction", "General learning"]:
+        duration = time.time() - session_start_time
+        if duration > 10:
+            log_session(current_activity, duration)
+
+
+    update_callback(f"\nFinal session logged. Goodbye.")

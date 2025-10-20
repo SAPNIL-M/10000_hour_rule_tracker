@@ -35,7 +35,8 @@ TOPIC_MAP = {
         'geeksforgeeks',
         'medium',
         'udemy',
-        'coursera'
+        'coursera',
+        'github'
     ],
     'Gemini': [ # You had this as a specific learning app
         'google gemini'
@@ -45,7 +46,7 @@ TOPIC_MAP = {
 # -----------------------------
 # Function: Check if a tab title or app name is learning
 # -----------------------------
-def is_learning_activity(active_name):
+def get_topic_from_activity(active_name):
     """
     Determines whether the current active window or Chrome tab
     represents a learning activity.
